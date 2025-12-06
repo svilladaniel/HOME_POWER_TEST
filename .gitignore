@@ -1,1 +1,6 @@
-/__pycache__/
+# Archivos de Python compilados
+*.pyc
+*.pyd
+
+# Directorio que contiene archivos .pyc
+__pycache__/
