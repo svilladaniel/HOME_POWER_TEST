@@ -1,0 +1,39 @@
+name: PR Checks - Tests & Static Analysis
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code_quality_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Configurar Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 2. Instalar dependencias (incluyendo Pytest)
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      # 3. Ejecutar Pruebas Unitarias (Punto 5)
+      - name: Run Pytest Unit Tests
+        run: pytest tests/
+
+      # 4. Análisis de Código Estático (Punto 6)
+      # Usaremos Flake8 como Linter para Python, una alternativa simple a SonarQube
+      - name: Install Flake8 Linter
+        run: pip install flake8
+
+      - name: Run Flake8 Static Analysis
+        # Ignorar el directorio frontend/ estático
+        run: flake8 . --exclude frontend,infra --count --show-source --max-complexity=10 --max-line-length=120 --statistics
+        # [cite_start]La acción fallará (retorna un código != 0) si encuentra errores, bloqueando el PR
