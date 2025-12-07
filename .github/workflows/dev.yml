@@ -41,6 +41,8 @@ jobs:
     # ---------------------------
     - name: Run pytest
       run: pytest
+      env:
+        PYTHONPATH: ${{ github.workspace }}
 
     # ---------------------------
     # 5. Build Lambda ZIP
