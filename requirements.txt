@@ -1,5 +1,5 @@
-# requirements.txt
-fastapi==0.104.1
-uvicorn[standard]==0.24.0.post1
+fastapi
+uvicorn
+magnum
 # Para pruebas
-pytest==7.4.3
+pytest
