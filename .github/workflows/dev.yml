@@ -1,84 +1,55 @@
-name: CI/CD Dev
+name: Dev Pipeline
 
 on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - dev
 
 jobs:
-  dev_pipeline:
+  dev:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    # ---------------------------
-    # 1. Configurar Python
-    # ---------------------------
-    - name: Setup Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: 3.12
 
-    # ---------------------------
-    # 2. Instalación dependencias
-    # ---------------------------
-    - name: Install main dependencies
-      run: pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install flake8 pytest
 
-    - name: Install dev tools
-      run: pip install flake8 pytest
-
-    # ---------------------------
-    # 3. Lint
-    # ---------------------------
     - name: Run flake8
       run: flake8 .
-
-    # ---------------------------
-    # 4. Unit tests
-    # ---------------------------
+      
     - name: Run pytest
       run: pytest
       env:
         PYTHONPATH: ${{ github.workspace }}
 
-    # ---------------------------
-    # 5. Build Lambda ZIP
-    # ---------------------------
-    - name: Build Lambda package
+    - name: Build Lambda ZIP
       run: |
-        rm -rf package
-        mkdir package
+        mkdir -p terraform/lambda
+        zip -r terraform/lambda/lambda.zip app/ requirements.txt
 
-        pip install -r requirements.txt -t package/
-        cp -r app/* package/
-
-        cd package
-        zip -r ../terraform/lambda/lambda.zip .
-        cd ..
-
-    # ---------------------------
-    # 6. Terraform Init/Plan/Apply
-    # ---------------------------
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-
-    - name: Terraform Init (DEV)
+    - name: Terraform Init
       working-directory: terraform
-      run: |
-        terraform init \
-          -backend-config="key=dev/terraform.tfstate"
+      run: terraform init -input=false
 
-    - name: Terraform Plan (DEV)
+    - name: Terraform Plan
       working-directory: terraform
-      run: terraform plan -var="environment=dev"
+      run: terraform plan -input=false
 
-    - name: Terraform Apply (DEV)
+    - name: Terraform Apply
       working-directory: terraform
-      run: terraform apply -auto-approve -var="environment=dev"
-
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: terraform apply -auto-approve -input=false
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

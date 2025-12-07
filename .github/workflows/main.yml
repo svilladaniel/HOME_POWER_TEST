@@ -1,4 +1,4 @@
-name: Deploy Production
+name: Main Pipeline
 
 on:
   push:
@@ -6,56 +6,38 @@ on:
       - main
 
 jobs:
-  prod_pipeline:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    # ---------------------------
-    # 1. Setup Python
-    # ---------------------------
-    - name: Setup Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: 3.12
 
-    # ---------------------------
-    # 2. Build Lambda ZIP
-    # ---------------------------
-    - name: Build Lambda package
+    - name: Install dependencies
       run: |
-        rm -rf package
-        mkdir package
+        pip install -r requirements.txt
 
-        pip install -r requirements.txt -t package/
-        cp -r app/* package/
-
-        cd package
-        zip -r ../terraform/lambda/lambda.zip .
-        cd ..
-
-    # ---------------------------
-    # 3. Terraform Init/Plan/Apply
-    # ---------------------------
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-
-    - name: Terraform Init (MAIN)
-      working-directory: terraform
+    - name: Build Lambda ZIP
       run: |
-        terraform init \
-          -backend-config="key=main/terraform.tfstate"
+        mkdir -p terraform/lambda
+        zip -r terraform/lambda/lambda.zip app/ requirements.txt
 
-    - name: Terraform Plan (MAIN)
+    - name: Terraform Init
       working-directory: terraform
-      run: terraform plan -var="environment=main"
+      run: terraform init -input=false
 
-    - name: Terraform Apply (MAIN)
+    - name: Terraform Plan
       working-directory: terraform
-      run: terraform apply -auto-approve -var="environment=main"
+      run: terraform plan -input=false
 
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Terraform Apply
+      working-directory: terraform
+      run: terraform apply -auto-approve -input=false
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
