@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+magnum
+# Para pruebas
+pytest
