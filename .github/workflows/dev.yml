@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - dev
-  pull_request:
-    branches:
-      - dev
 
 jobs:
   dev:
@@ -38,6 +35,11 @@ jobs:
       run: |
         mkdir -p terraform/lambda
         zip -r terraform/lambda/lambda.zip app/ requirements.txt
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.14.1
 
     - name: Terraform Init
       working-directory: terraform
