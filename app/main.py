@@ -11,7 +11,7 @@ FRONTEND_FILE = os.path.join(BASE_DIR, "frontend", "index.html")
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root(): 
+async def root():
     try:
         with open(FRONTEND_FILE, "r", encoding="utf-8") as f:
             return f.read()
