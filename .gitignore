@@ -1,1 +1,38 @@
-/__pycache__/
+# .gitignore
+
+# -----------------
+# Python / FastAPI
+# -----------------
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# -----------------
+# Terraform
+# -----------------
+# El state remoto se gestiona en S3, pero debemos ignorar el state local:
+.terraform/
+*.tfplan
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+
+# -----------------
+# Docker
+# -----------------
+# Ignorar artefactos de construcción (Build artifacts)
+!Dockerfile
+!docker-compose.yml
+.dockerignore
+
+# -----------------
+# Logs y Secretos
+# -----------------
+*.log
+# Ignorar claves SSH o archivos sensibles que no deben estar en el repo
+*.pem
+.env
