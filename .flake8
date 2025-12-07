@@ -8,6 +8,4 @@ exclude =
     .terraform,
     terraform/.terraform,
     .pytest_cache
-ignore =
-    W503,  # line break before binary operator
-    E203   # whitespace before ':'
+ignore = W503,E203
