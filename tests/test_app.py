@@ -15,7 +15,7 @@ def test_root_returns_html():
     assert response.status_code == 200
     assert "<html" in response.text.lower()   # HTML básico
     assert "Prueba para Powertest".lower() in response.text.lower()
-
+    
 def test_api_info_returns_correct_json():
     """
     Verifica que la API devuelva el JSON exacto esperado.
