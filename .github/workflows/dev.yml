@@ -56,7 +56,7 @@ jobs:
       run: terraform plan -input=false
 
     - name: Run Infracost
-      uses: infracost/infracost-gh-action@v2
+      uses: infracost/infracost-gh-action@latest
       with:
         path: terraform
       env:
