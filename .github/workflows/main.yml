@@ -13,13 +13,20 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq zip
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
 
     - name: Build Lambda ZIP
       run: |
         mkdir -p terraform/lambda
-        zip -r terraform/lambda/lambda.zip app/ requirements.txt
+        mkdir -p package
+        pip install -r requirements.txt -t package/
+        cp -r app/* package/
+        cd package
+        zip -r ../terraform/lambda/lambda.zip .
+        cd ..
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
@@ -51,11 +58,17 @@ jobs:
           -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
           -var="environment=main" \
-          -var="lambda_zip_path=terraform/lambda/lambda.zip"
+          -var="lambda_zip_path=lambda/lambda.zip"
 
     - name: Terraform Apply
       working-directory: terraform
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: terraform apply -auto-approve -input=false
+      run: |
+        terraform apply -auto-approve -input=false \
+          -var="AWS_REGION=us-east-1" \
+          -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -var="lambda_zip_path=lambda/lambda.zip" \
+          -var="environment=main"
