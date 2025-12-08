@@ -119,8 +119,12 @@ jobs:
 
     - name: Build Lambda ZIP
       run: |
-        mkdir -p terraform/lambda
-        zip -r terraform/lambda/lambda.zip app/ requirements.txt
+        mkdir -p package
+        pip install -r requirements.txt -t package/
+        cp -r app/* package/
+        cd package
+        zip -r ../terraform/lambda/lambda.zip .
+        cd ..
     
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
