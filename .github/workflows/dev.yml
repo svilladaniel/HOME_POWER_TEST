@@ -119,6 +119,7 @@ jobs:
 
     - name: Build Lambda ZIP
       run: |
+        mkdir -p terraform/lambda
         mkdir -p package
         pip install -r requirements.txt -t package/
         cp -r app/* package/
