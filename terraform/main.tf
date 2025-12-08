@@ -18,7 +18,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Función Lambda
+# Función Lambda con versionado
 resource "aws_lambda_function" "lambda" {
   function_name = "${var.lambda_function_name}-${var.environment}"
   role          = aws_iam_role.lambda_role.arn
@@ -27,6 +27,7 @@ resource "aws_lambda_function" "lambda" {
   filename      = var.lambda_zip_path
 
   source_code_hash = filebase64sha256(var.lambda_zip_path)
+  publish          = true
 
   environment {
     variables = {
@@ -35,9 +36,44 @@ resource "aws_lambda_function" "lambda" {
   }
 }
 
+# Alias para apuntar a la versión activa
+resource "aws_lambda_alias" "alias" {
+  name             = var.environment   # "dev" o "main"
+  function_name    = aws_lambda_function.lambda.function_name
+  function_version = aws_lambda_function.lambda.version
+}
+
+# Limpiar versiones viejas automáticamente
+resource "null_resource" "cleanup_old_versions" {
+  depends_on = [aws_lambda_alias.alias]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      aws lambda list-versions-by-function \
+        --function-name ${aws_lambda_function.lambda.function_name} \
+        --query 'Versions[?Version != "$LATEST"]' \
+        --output json | \
+      jq -r '.[] | select(.Version != "${aws_lambda_alias.alias.function_version}") | .Version' | \
+      xargs -r -I {} aws lambda delete-function \
+        --function-name ${aws_lambda_function.lambda.function_name} --qualifier {}
+    EOT
+    environment = {
+      AWS_ACCESS_KEY_ID     = var.AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY = var.AWS_SECRET_KEY
+      AWS_REGION            = var.AWS_REGION
+    }
+  }
+}
+
+# Log group para Lambda con retención de 7 días
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/${var.lambda_function_name}-${var.environment}"
+  retention_in_days = 7
+}
+
 # API Gateway HTTP API
 resource "aws_apigatewayv2_api" "api" {
-  name          = "powertest-api-${var.environment}"
+  name          = "${var.lambda_function_name}-api-${var.environment}"
   protocol_type = "HTTP"
 }
 
@@ -48,21 +84,21 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
   integration_uri  = aws_lambda_function.lambda.invoke_arn
 }
 
-# Route default (todas las rutas)
+# Ruta default (todas las rutas)
 resource "aws_apigatewayv2_route" "default_route" {
   api_id    = aws_apigatewayv2_api.api.id
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
-# Stage default (producción automática)
+# Stage default (auto deploy)
 resource "aws_apigatewayv2_stage" "stage" {
   api_id      = aws_apigatewayv2_api.api.id
   name        = "$default"
   auto_deploy = true
 }
 
-# Permisos para que API Gateway invoque Lambda
+# Permiso para que API Gateway invoque Lambda
 resource "aws_lambda_permission" "api_permission" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
