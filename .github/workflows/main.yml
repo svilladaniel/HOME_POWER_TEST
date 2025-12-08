@@ -6,21 +6,15 @@ on:
       - main
 
 jobs:
-  deploy:
+  main:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq zip
 
     - name: Build Lambda ZIP
       run: |
@@ -37,14 +31,27 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: terraform init -input=false
+      run: |
+        terraform init -input=false \
+          -backend-config="bucket=terraform-state-devops-test-daniel" \
+          -backend-config="key=main/terraform.tfstate" \
+          -backend-config="region=us-east-1" \
+          -backend-config="encrypt=true" \
+          -backend-config="use_lockfile=true" \
+          -reconfigure
 
     - name: Terraform Plan
       working-directory: terraform
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: terraform plan -input=false
+      run: |
+        terraform plan -input=false \
+          -var="AWS_REGION=us-east-1" \
+          -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -var="environment=main" \
+          -var="lambda_zip_path=terraform/lambda/lambda.zip"
 
     - name: Terraform Apply
       working-directory: terraform

@@ -1,3 +1,89 @@
+# name: Dev Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - dev
+
+# jobs:
+#   dev:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v3
+
+#     - name: Set up Python
+#       uses: actions/setup-python@v4
+#       with:
+#         python-version: 3.12
+
+#     - name: Install dependencies
+#       run: |
+#         pip install -r requirements.txt
+#         pip install flake8 pytest
+
+#     - name: Run flake8
+#       run: flake8 .
+      
+#     - name: Run pytest
+#       run: pytest
+#       env:
+#         PYTHONPATH: ${{ github.workspace }}
+
+#     - name: Build Lambda ZIP
+#       run: |
+#         mkdir -p terraform/lambda
+#         zip -r terraform/lambda/lambda.zip app/ requirements.txt
+    
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v2
+#       with:
+#         terraform_version: 1.14.1
+
+#     - name: Terraform Init
+#       working-directory: terraform
+#       env:
+#         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#       run: |
+#         terraform init -input=false \
+#           -backend-config="bucket=terraform-state-devops-test-daniel" \
+#           -backend-config="key=dev/terraform.tfstate" \
+#           -backend-config="region=us-east-1" \
+#           -backend-config="encrypt=true" \
+#           -backend-config="use_lockfile=true" \
+#           -reconfigure
+
+#     - name: Terraform Plan
+#       working-directory: terraform
+#       env:
+#         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#       run: |
+#         terraform plan -input=false \
+#           -var="AWS_REGION=us-east-1" \
+#           -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+#           -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+#           -var="environment=dev" \
+#           -var="lambda_zip_path=lambda/lambda.zip"
+
+
+#     - name: Setup Infracost CLI
+#       uses: infracost/actions/setup@v3
+#       with:
+#         api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+#     - name: Generate Infracost cost estimate
+#       run: infracost breakdown --path=terraform --format=table
+
+#     - name: Terraform Apply
+#       working-directory: terraform
+#       env:
+#         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#       run: terraform apply -auto-approve -input=false
+
 name: Dev Pipeline
 
 on:
@@ -21,7 +107,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        pip install flake8 pytest
+        pip install flake8 pytest jq
 
     - name: Run flake8
       run: flake8 .
@@ -66,8 +152,7 @@ jobs:
           -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
           -var="environment=dev" \
-          -var="lambda_zip_path=lambda/lambda.zip"
-
+          -var="lambda_zip_path=terraform/lambda/lambda.zip"
 
     - name: Setup Infracost CLI
       uses: infracost/actions/setup@v3
@@ -77,9 +162,9 @@ jobs:
     - name: Generate Infracost cost estimate
       run: infracost breakdown --path=terraform --format=table
 
-    # - name: Terraform Apply
-    #   working-directory: terraform
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #   run: terraform apply -auto-approve -input=false
+    - name: Terraform Apply
+      working-directory: terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: terraform apply -auto-approve -input=false
