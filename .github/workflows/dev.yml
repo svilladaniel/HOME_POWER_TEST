@@ -152,7 +152,7 @@ jobs:
           -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
           -var="environment=dev" \
-          -var="lambda_zip_path=terraform/lambda/lambda.zip"
+          -var="lambda_zip_path=lambda/lambda.zip"
 
     - name: Setup Infracost CLI
       uses: infracost/actions/setup@v3
