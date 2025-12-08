@@ -1,5 +1,5 @@
 fastapi
 uvicorn
-magnum
-# Para pruebas
+mangum
+httpx
 pytest

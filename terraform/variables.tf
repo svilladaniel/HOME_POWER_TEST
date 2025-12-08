@@ -1,14 +1,14 @@
-variable "region" {
+variable "AWS_REGION" {
   type        = string
   description = "AWS region"
 }
 
-variable "aws_access_key" {
+variable "AWS_ACCESS_KEY_ID" {
   type        = string
   sensitive   = true
 }
 
-variable "aws_secret_key" {
+variable "AWS_SECRET_KEY" {
   type        = string
   sensitive   = true
 }
