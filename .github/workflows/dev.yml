@@ -75,7 +75,7 @@ jobs:
         api-key: ${{ secrets.INFRACOST_API_KEY }}
 
     - name: Generate Infracost cost estimate
-      run: infracost breakdown --path=terraform --format=text
+      run: infracost breakdown --path=terraform --format=table
 
     # - name: Terraform Apply
     #   working-directory: terraform
