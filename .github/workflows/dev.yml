@@ -53,7 +53,21 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: terraform plan -input=false
+      run: |
+        terraform init -input=false \
+          -backend-config="bucket=terraform-state-devops-test-daniel" \
+          -backend-config="key=dev/terraform.tfstate" \
+          -backend-config="region=us-east-1" \
+          -backend-config="encrypt=true" \
+          -backend-config="use_lockfile=true"
+
+        terraform plan -input=false \
+          -var="AWS_REGION=us-east-1" \
+          -var="AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -var="AWS_SECRET_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -var="environment=dev" \
+          -var="lambda_zip_path=terraform/lambda/lambda.zip"
+
 
     - name: Setup Infracost CLI
       uses: infracost/actions/setup@v3
